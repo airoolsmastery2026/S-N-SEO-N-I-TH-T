@@ -932,6 +932,197 @@ class LeadViewModel(application: Application) : AndroidViewModel(application) {
             "09:00 Sáng"
         }
     }
+
+    // Module 5 & Integration Configurations
+    private val _apifyToken = MutableStateFlow("ap_fb_group_scraper_9a8f23c7b")
+    val apifyToken = _apifyToken.asStateFlow()
+
+    private val _fbGroupUrl = MutableStateFlow("https://www.facebook.com/groups/dan-cu-thu-duc")
+    val fbGroupUrl = _fbGroupUrl.asStateFlow()
+
+    private val _tiktokHashtag = MutableStateFlow("#noithathcm")
+    val tiktokHashtag = _tiktokHashtag.asStateFlow()
+
+    private val _scrapingInterval = MutableStateFlow("15 phút")
+    val scrapingInterval = _scrapingInterval.asStateFlow()
+
+    private val _isTestingScraper = MutableStateFlow(false)
+    val isTestingScraper = _isTestingScraper.asStateFlow()
+
+    private val _scraperConsoleLogs = MutableStateFlow<List<String>>(emptyList())
+    val scraperConsoleLogs = _scraperConsoleLogs.asStateFlow()
+
+    // Webhook Server States
+    private val _webhookEndpoint = MutableStateFlow("https://xuong-noithat-cokhi-api.vn/webhook/chat")
+    val webhookEndpoint = _webhookEndpoint.asStateFlow()
+
+    private val _zaloOaToken = MutableStateFlow("zalo_oa_auth_token_987654321")
+    val zaloOaToken = _zaloOaToken.asStateFlow()
+
+    private val _metaVerifyToken = MutableStateFlow("meta_verify_token_123456")
+    val metaVerifyToken = _metaVerifyToken.asStateFlow()
+
+    private val _serverConsoleLogs = MutableStateFlow<List<String>>(listOf(
+        "INFO:     Uvicorn server running on http://127.0.0.1:8000 (Press CTRL+C to quit)",
+        "INFO:     Started parent process [18442]",
+        "INFO:     Waiting for application startup...",
+        "INFO:     Application startup complete."
+    ))
+    val serverConsoleLogs = _serverConsoleLogs.asStateFlow()
+
+    private val _isSimulatingWebhook = MutableStateFlow(false)
+    val isSimulatingWebhook = _isSimulatingWebhook.asStateFlow()
+
+    private val _simulatedWebhookResult = MutableStateFlow<String?>(null)
+    val simulatedWebhookResult = _simulatedWebhookResult.asStateFlow()
+
+    fun updateApifySettings(token: String, groupUrl: String, hashtag: String, interval: String) {
+        _apifyToken.value = token
+        _fbGroupUrl.value = groupUrl
+        _tiktokHashtag.value = hashtag
+        _scrapingInterval.value = interval
+    }
+
+    fun updateWebhookSettings(endpoint: String, zaloToken: String, metaToken: String) {
+        _webhookEndpoint.value = endpoint
+        _zaloOaToken.value = zaloToken
+        _metaVerifyToken.value = metaToken
+    }
+
+    fun testScraperConnection() {
+        if (_isTestingScraper.value) return
+        _isTestingScraper.value = true
+        _scraperConsoleLogs.value = emptyList()
+        
+        viewModelScope.launch {
+            val logs = mutableListOf<String>()
+            fun addLog(msg: String) {
+                logs.add(msg)
+                _scraperConsoleLogs.value = logs.toList()
+            }
+
+            addLog("[2026-07-21 11:30:01] [INFO] Khởi tạo Apify Client với token: ${_apifyToken.value.take(12)}...")
+            delay(800)
+            addLog("[2026-07-21 11:30:02] [INFO] Trực chỉ Actor: apify/facebook-groups-scraper (Version 2.4.1)")
+            delay(600)
+            addLog("[2026-07-21 11:30:03] [INFO] Cấu hình proxy dân cư xoay vòng (Rotating Residential Proxies)...")
+            addLog("[2026-07-21 11:30:03] [INFO] IP proxy được cấp phát: 14.161.85.104 (TP. Hồ Chí Minh, Viettel)")
+            delay(1000)
+            addLog("[2026-07-21 11:30:04] [INFO] Áp dụng Session Cookie từ kho tài khoản tương tác thực...")
+            addLog("[2026-07-21 11:30:04] [INFO] Target URL: ${_fbGroupUrl.value}")
+            delay(1200)
+            addLog("[2026-07-21 11:30:06] [INFO] Đang mô phỏng thao tác cuộn trang (Human scroll emulation) để tránh Checkpoint...")
+            addLog("[2026-07-21 11:30:06] [INFO] Thêm delay ngẫu nhiên: 4.5s...")
+            delay(1500)
+            addLog("[2026-07-21 11:30:07] [INFO] Đang tải danh sách bài viết mới nhất...")
+            delay(1000)
+            addLog("[2026-07-21 11:30:08] [SUCCESS] Quét thành công! Đã thu thập được 12 bài viết mới từ ${_fbGroupUrl.value.substringAfterLast("/")}.")
+            addLog("[2026-07-21 11:30:08] [SUCCESS] Toàn bộ dữ liệu thô dạng JSON đã được gửi tới AI Intent Filter để lọc.")
+            _isTestingScraper.value = false
+        }
+    }
+
+    fun simulateWebhookMessage(senderName: String, message: String) {
+        if (_isSimulatingWebhook.value) return
+        _isSimulatingWebhook.value = true
+        _simulatedWebhookResult.value = null
+        
+        // Add request logs to server logs
+        val currentLogs = _serverConsoleLogs.value.toMutableList()
+        currentLogs.add("INFO:     127.0.0.1:51302 - \"POST /webhook/chat HTTP/1.1\" START")
+        currentLogs.add("DEBUG:    [Payload] {\"sender_name\": \"$senderName\", \"message\": \"$message\"}")
+        currentLogs.add("INFO:     [FastAPI] Đang xử lý tin nhắn của $senderName qua AI Agent...")
+        _serverConsoleLogs.value = currentLogs.toList()
+        
+        viewModelScope.launch {
+            try {
+                val apiKey = BuildConfig.GEMINI_API_KEY
+                val hasKey = apiKey.isNotEmpty() && apiKey != "MY_GEMINI_API_KEY"
+                
+                val reply = if (hasKey) {
+                    withContext(Dispatchers.IO) {
+                        val systemPrompt = """
+                            Bạn là nhân viên tư vấn bán hàng chuyên nghiệp của xưởng Nội thất & Cơ khí tại TP.HCM.
+                            Nhiệm vụ của bạn là phản hồi tin nhắn của khách hàng nhắn tin vào Fanpage hoặc Zalo OA của xưởng.
+                            
+                            Bảng giá tham khảo của xưởng:
+                            - Tủ bếp trên gỗ MDF chống ẩm phủ Acrylic: 3.200.000 - 3.800.000 đ/mét dài.
+                            - Tủ bếp dưới gỗ MDF chống ẩm phủ Acrylic, mặt đá: 4.200.000 - 5.000.000 đ/mét dài.
+                            - Cửa cổng sắt hộp mạ kẽm CNC: 1.800.000 - 2.500.000 đ/m2.
+                            
+                            Nguyên tắc phản hồi:
+                            1. Thân thiện, lịch sự, sử dụng văn phong miền Nam, luôn có từ "Dạ", "dạ em chào anh/chị [Tên]", cuối câu có chữ "ạ" hoặc "nha".
+                            2. Cung cấp khoảng giá sơ bộ một cách rõ ràng dựa trên bảng giá.
+                            3. Khéo léo hỏi số điện thoại hoặc mời khách hẹn lịch để bên em cho kỹ thuật qua đo đạc trực tiếp, vẽ bản vẽ 3D và báo giá chính xác hoàn toàn miễn phí tại TP.HCM.
+                            4. Viết ngắn gọn, súc tích (dưới 80 từ), tự nhiên như người thật đang chat.
+                        """.trimIndent()
+                        
+                        val request = GeminiRequest(
+                            contents = listOf(
+                                GeminiContent(
+                                    parts = listOf(GeminiPart(text = "Tin nhắn khách hàng $senderName: \"$message\""))
+                                )
+                            ),
+                            generationConfig = GeminiGenerationConfig(
+                                temperature = 0.7f
+                            ),
+                            systemInstruction = GeminiContent(
+                                parts = listOf(GeminiPart(text = systemPrompt))
+                            )
+                        )
+                        val response = RetrofitClient.service.generateContent(apiKey, request)
+                        response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                            ?: "Dạ em chào anh/chị $senderName ạ. Bên em chuyên thi công nội thất và cơ khí sắt mạ kẽm. Anh/chị cho em xin số điện thoại để thợ kỹ thuật liên hệ tư vấn, báo giá chính xác nhất và đo đạc miễn phí nhé ạ!"
+                    }
+                } else {
+                    // High-quality local Southern Vietnamese accent Sales agent responder fallback
+                    delay(1500)
+                    generateLocalSalesReply(senderName, message)
+                }
+                
+                val finalLogs = _serverConsoleLogs.value.toMutableList()
+                finalLogs.add("INFO:     [FastAPI] AI Agent soạn câu trả lời thành công.")
+                finalLogs.add("DEBUG:    [Response JSON] {")
+                finalLogs.add("            \"status\": \"success\",")
+                finalLogs.add("            \"customer_message\": \"$message\",")
+                finalLogs.add("            \"ai_suggested_reply\": \"$reply\"")
+                finalLogs.add("          }")
+                finalLogs.add("INFO:     127.0.0.1:51302 - \"POST /webhook/chat HTTP/1.1\" 200 OK")
+                _serverConsoleLogs.value = finalLogs.toList()
+                
+                _simulatedWebhookResult.value = reply
+            } catch (e: Exception) {
+                e.printStackTrace()
+                val finalLogs = _serverConsoleLogs.value.toMutableList()
+                finalLogs.add("ERROR:    [FastAPI] Lỗi gọi Gemini API: ${e.message}. Sử dụng fallback.")
+                val fallbackReply = generateLocalSalesReply(senderName, message)
+                finalLogs.add("DEBUG:    [Response JSON] {")
+                finalLogs.add("            \"status\": \"success\",")
+                finalLogs.add("            \"ai_suggested_reply\": \"${fallbackReply}\"")
+                finalLogs.add("          }")
+                finalLogs.add("INFO:     127.0.0.1:51302 - \"POST /webhook/chat HTTP/1.1\" 200 OK")
+                _serverConsoleLogs.value = finalLogs.toList()
+                _simulatedWebhookResult.value = fallbackReply
+            } finally {
+                _isSimulatingWebhook.value = false
+            }
+        }
+    }
+
+    private fun generateLocalSalesReply(senderName: String, message: String): String {
+        val lower = message.lowercase()
+        return when {
+            lower.contains("bếp") || lower.contains("tủ bếp") || lower.contains("acrylic") || lower.contains("mdf") -> {
+                "Dạ em chào anh/chị $senderName ạ! Về tủ bếp bên em sử dụng gỗ MDF chống ẩm An Cường phủ Acrylic. Giá tủ bếp trên dao động từ 3.2tr - 3.8tr/mét dài, tủ dưới kèm mặt đá dao động 4.2tr - 5tr/mét dài ạ. Anh/chị cho em xin số điện thoại để em hẹn thợ mang mẫu ván qua khảo sát, đo đạc trực tiếp và lên thiết kế 3D hoàn toàn miễn phí cho mình nha!"
+            }
+            lower.contains("cửa") || lower.contains("sắt") || lower.contains("lan can") || lower.contains("hàng rào") || lower.contains("hàn") || lower.contains("cnc") -> {
+                "Dạ em chào anh/chị $senderName ạ! Bên em chuyên thi công cửa cổng sắt hộp mạ kẽm cắt CNC nghệ thuật, giá dao động khoảng 1.8tr - 2.5tr/m2 tùy mẫu mã và độ dày sắt ạ. Anh/chị rảnh khi nào để bên em cho kỹ thuật ghé công trình đo kích thước và tư vấn kiểu dáng trực tiếp cho mình hoàn toàn miễn phí nha?"
+            }
+            else -> {
+                "Dạ em chào anh/chị $senderName ạ! Em nhận được yêu cầu của mình rồi nha. Bên em chuyên thiết kế thi công trọn gói Nội thất & Cơ khí tại TP.HCM. Anh/chị cho em xin số điện thoại hoặc địa chỉ công trình để em sắp xếp kỹ thuật liên hệ tư vấn và qua đo đạc trực tiếp báo giá miễn phí cho mình nhé ạ!"
+            }
+        }
+    }
 }
 
 

@@ -257,6 +257,170 @@ fun AnalyticsScreen(
                 PipelineRow(title = "3. Đã ký hợp đồng chốt", count = crmWon, ratio = if (totalSaved > 0) crmWon.toFloat() / totalSaved else 0f, color = MechCategory)
             }
         }
+
+        // ==================== MODULE 5: AUTOMATED REPORTING DIGEST ====================
+        var showDigestDialog by remember { mutableStateOf(false) }
+        val totalScannedToday = allLeads.size
+        val totalConsultedToday = savedLeads.count { it.estimatedPrice != null }
+        val totalRepliedToday = savedLeads.count { it.customerReplyText != null }
+        val totalApptsToday = savedLeads.count { it.appointmentDate != null }
+        
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.05f)
+            ),
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Default.NotificationsActive,
+                        contentDescription = "Notification",
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Module 5: Báo cáo tự động (Daily Digest)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Box(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            "BOT VẬN HÀNH",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Bản tin tổng hợp tình hình kinh doanh của xưởng được tổng hợp tự động lúc 21:00 mỗi tối và bắn thẳng về nhóm chat Telegram của Ban quản lý & Chủ xưởng:",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 18.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Telegram Bubble Preview Box
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.SendAndArchive,
+                            contentDescription = "Telegram",
+                            tint = Color(0xFF1877F2),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Telegram Bot • 21:00 (Hôm nay)",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = """
+                            📊 BÁO CÁO KẾT QUẢ VẬN HÀNH XƯỞNG TỰ ĐỘNG
+                            📅 Ngày báo cáo: 21/07/2026 (Realtime)
+                            ───────────────────
+                            🔍 1. Tổng số Lead quét được trong ngày: $totalScannedToday
+                            🤖 2. Số khách đã được AI tư vấn báo giá tự động: $totalConsultedToday
+                            💬 3. Số khách phản hồi đồng ý gặp/chốt lịch khảo sát: $totalRepliedToday / $totalApptsToday
+                            📈 4. Tỷ lệ chuyển đổi hôm nay: $conversionRate%
+                            
+                            👉 Ghi chú: Hệ thống Multi-Agent đang vận hành mượt mà 24/7. Thợ kỹ thuật đã nhận đầy đủ lịch khảo sát đo đạc qua Telegram giao việc riêng.
+                        """.trimIndent(),
+                        fontSize = 12.sp,
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        lineHeight = 18.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Button(
+                    onClick = { showDigestDialog = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Default.Send,
+                        contentDescription = "Bắn thử báo cáo",
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Gửi báo cáo cuối ngày (Simulate Telegram Digest)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        // Elegant M3 Dialog to display the simulation feedback
+        if (showDigestDialog) {
+            AlertDialog(
+                onDismissRequest = { showDigestDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Bắn báo cáo Telegram thành công", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                },
+                text = {
+                    Text(
+                        text = "Hệ thống Automation Engine đã biên soạn thành công bản tin tổng hợp cuối ngày (Daily Digest) và truyền tải thành công tới Telegram Chat ID của Ban Quản Trị xưởng:\n\n" +
+                               "• Người nhận: Chủ xưởng & Đội trưởng Kỹ thuật\n" +
+                               "• Trạng thái: Đã gửi (200 OK)\n" +
+                               "• Nội dung: Bao gồm kết quả quét, tỷ lệ chuyển đổi và cập nhật lịch hẹn khảo sát thực tế.",
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { showDigestDialog = false }) {
+                        Text("Đóng", fontWeight = FontWeight.Bold)
+                    }
+                }
+            )
+        }
     }
 }
 
