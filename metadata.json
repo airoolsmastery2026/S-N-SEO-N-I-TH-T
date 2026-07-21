@@ -1,0 +1,6 @@
+{
+  "name": "Săn Lead Social",
+  "description": "Ứng dụng tìm kiếm khách hàng tiềm năng ngành nội thất và cơ khí tại TP.HCM & lân cận sử dụng AI",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
